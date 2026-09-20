@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Conteo Acta — Ate</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 min-h-screen flex items-center justify-center">
+  <form id="f" class="bg-white p-8 rounded-lg shadow w-80 grid gap-3">
+    <h1 class="font-bold text-slate-800">Coordinador Ate</h1>
+    <p class="text-xs text-slate-500">Este portal solo da de alta y ve actas de Ate.</p>
+    <input id="u" class="border rounded px-3 py-2" placeholder="usuario" required>
+    <input id="p" type="password" class="border rounded px-3 py-2" placeholder="contraseña" required>
+    <button class="bg-teal-700 hover:bg-teal-600 text-white rounded py-2">Entrar</button>
+    <p id="m" class="text-sm text-red-600"></p>
+  </form>
+  <script src="config.js"></script>
+  <script>
+    document.getElementById('f').onsubmit = async (e) => {
+      e.preventDefault();
+      const r = await fetch(CONFIG.apiBaseUrl + '/portal/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          usuario: document.getElementById('u').value,
+          password: document.getElementById('p').value,
+          zona: 'ATE',
+        }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        document.getElementById('m').textContent = d.mensaje || 'Error';
+        return;
+      }
+      sessionStorage.setItem('idToken', d.idToken);
+      window.location = 'index.html';
+    };
+  </script>
+</body>
+</html>

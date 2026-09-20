@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conteo Acta — Ate</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 min-h-screen">
+    <header class="bg-teal-800 text-white px-6 py-3 flex justify-between items-center">
+    <h1 class="text-lg font-bold">Conteo Acta — Ate</h1>
+    <nav class="flex gap-1 text-sm">
+      <button type="button" data-tab="tabCoord" class="tabBtn bg-blue-600 px-3 py-1.5 rounded">Coordinación</button>
+      <button type="button" data-tab="tabRevision" class="tabBtn bg-blue-700/50 hover:bg-blue-600 px-3 py-1.5 rounded">Revisión</button>
+      <button type="button" data-tab="tabConteo" class="tabBtn bg-blue-700/50 hover:bg-blue-600 px-3 py-1.5 rounded">Conteo en vivo</button>
+    </nav>
+    <button onclick="cerrarSesion()" class="text-sm bg-blue-700 hover:bg-blue-600 px-3 py-1.5 rounded">
+      Cerrar sesión
+    </button>
+  </header>
+
+  <main class="max-w-5xl mx-auto p-6 grid gap-6">
+
+    <div id="tabCoord" class="tabPanel grid gap-6">
+
+    <section id="seccionAlta" class="bg-white rounded-lg shadow p-6">
+      <h2 class="font-bold text-slate-800 mb-4">Alta express de personero · Ate</h2>
+      <p class="text-sm text-slate-600 mb-4">Quienes se den de alta aquí quedan fijos en Ate. No hay selector de zona.</p>
+      <form id="formAlta" class="flex flex-wrap gap-3 items-end">
+        <div class="flex flex-col">
+          <label class="text-sm text-slate-600 mb-1">DNI</label>
+          <input id="inputDni" maxlength="8" inputmode="numeric" required
+                 class="border border-slate-300 rounded px-3 py-2 w-40" placeholder="8 dígitos">
+        </div>
+        <div class="flex flex-col">
+          <label class="text-sm text-slate-600 mb-1">Celular</label>
+          <input id="inputCelular" maxlength="9" inputmode="numeric" required
+                 class="border border-slate-300 rounded px-3 py-2 w-44" placeholder="9 dígitos">
+        </div>
+        <button type="submit" class="bg-teal-700 hover:bg-teal-600 text-white px-5 py-2 rounded font-medium">
+          Dar de alta
+        </button>
+      </form>
+      <p id="msgAlta" class="text-sm mt-3"></p>
+    </section>
+
+    <section class="bg-white rounded-lg shadow p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="font-bold text-slate-800">Personeros</h2>
+        <form id="formBuscar" class="flex gap-2">
+          <input id="inputBuscar" maxlength="8" inputmode="numeric" placeholder="Buscar por DNI"
+                 class="border border-slate-300 rounded px-3 py-1.5 w-44 text-sm">
+          <button class="bg-slate-200 hover:bg-slate-300 px-3 py-1.5 rounded text-sm">Buscar</button>
+        </form>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-slate-500 border-b">
+              <th class="py-2">DNI</th><th>Celular</th><th>Estado</th><th>Dispositivo</th><th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tablaPersoneros"></tbody>
+        </table>
+      </div>
+      <p id="msgPersoneros" class="text-sm mt-3 text-slate-500"></p>
+    </section>
+
+    <section class="bg-white rounded-lg shadow p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="font-bold text-slate-800">Cuarentena de fotos</h2>
+        <button onclick="cargarCuarentena()" class="bg-slate-200 hover:bg-slate-300 px-3 py-1.5 rounded text-sm">Actualizar</button>
+      </div>
+      <div id="listaCuarentena" class="grid grid-cols-4 gap-4"></div>
+      <p id="msgCuarentena" class="text-sm mt-3 text-slate-500"></p>
+    </section>
+    </div>
+
+    <div id="tabRevision" class="tabPanel hidden grid gap-6">
+
+  <section class="bg-white rounded-lg shadow p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="font-bold text-slate-800">Revisión de actas (OCR discrepancia)</h2>
+        <button onclick="cargarActas()" class="bg-slate-200 hover:bg-slate-300 px-3 py-1.5 rounded text-sm">Actualizar</button>
+      </div>
+      <div id="listaActas" class="flex flex-col gap-3"></div>
+      <p id="msgActas" class="text-sm mt-3 text-slate-500"></p>
+    </section>
+    </div>
+
+    <div id="tabConteo" class="tabPanel hidden">
+      <section class="bg-white rounded-lg shadow p-6">
+        <div class="flex justify-between items-center mb-2">
+          <h2 class="font-bold text-slate-800">Conteo en vivo</h2>
+          <div class="flex gap-2 items-center">
+            <span id="conteoReloj" class="text-xs text-slate-500"></span>
+            <button onclick="cargarConteo()" class="bg-slate-200 hover:bg-slate-300 px-3 py-1.5 rounded text-sm">Actualizar</button>
+          </div>
+        </div>
+        <p class="text-xs text-slate-500 mb-4">Solo actas de Ate aceptadas (OCR OK o revisadas). Si la misma mesa se subió varias veces, cuenta la más reciente. Se refresca cada 15 s.</p>
+        <div id="conteoSubtabs" class="flex flex-wrap gap-2 mb-4 hidden">
+          <button type="button" data-grupo="regional" class="conteoGrupo px-3 py-1.5 rounded text-sm bg-blue-600 text-white">Regional (gobernador y consejero)</button>
+          <button type="button" data-grupo="provincial" class="conteoGrupo px-3 py-1.5 rounded text-sm bg-slate-200 hover:bg-slate-300">Alcalde provincial</button>
+        </div>
+        <p id="conteoResumen" class="text-sm text-slate-600 mb-4"></p>
+        <div id="listaConteo" class="grid gap-6"></div>
+        <p id="msgConteo" class="text-sm mt-3 text-slate-500"></p>
+      </section>
+    </div>
+
+    <div id="modalActa" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[95vh] overflow-y-auto p-6 relative">
+        <button onclick="cerrarModal()" class="absolute top-3 right-3 bg-slate-200 hover:bg-slate-300 px-3 py-1 rounded text-sm z-10">Cerrar</button>
+        <h3 id="modalTitulo" class="font-bold text-lg text-slate-800 mb-4"></h3>
+        <p id="modalOrigen" class="text-xs text-blue-700 mb-3"></p>
+        <div class="grid lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2">
+            <img id="modalFoto" class="w-full border rounded-lg bg-slate-100 cursor-zoom-in" alt="acta" style="max-height:80vh;object-fit:contain">
+          </div>
+          <div class="lg:col-span-1">
+            <p id="modalErrores" class="text-xs text-red-700 bg-red-50 border border-red-200 rounded p-2 mb-3"></p>
+            <p id="modalDiscrepancia" class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2 mb-3 hidden"></p>
+            <table class="w-full text-sm">
+              <thead><tr class="text-left text-slate-500 border-b"><th class="py-1.5">Movimiento</th><th class="text-right">Votos</th></tr></thead>
+              <tbody id="modalVotos"></tbody>
+            </table>
+            <div class="mt-3 border-t border-slate-200 pt-3">
+              <p class="text-xs font-bold text-slate-600 mb-2">Votos especiales (editables)</p>
+              <table class="w-full text-sm">
+                <tbody>
+                  <tr class="border-b">
+                    <td class="py-1.5">SUMA MOVIMIENTOS</td>
+                    <td class="text-right font-bold"><span id="modalSuma">0</span></td>
+                  </tr>
+                  <tr class="border-b">
+                    <td class="py-1.5">Blancos</td>
+                    <td class="text-right"><input type="number" min="0" id="modalBlanco" value="0" class="votoE border border-slate-300 rounded px-2 py-1 w-20 text-right"></td>
+                  </tr>
+                  <tr class="border-b">
+                    <td class="py-1.5">Nulos</td>
+                    <td class="text-right"><input type="number" min="0" id="modalNulos" value="0" class="votoE border border-slate-300 rounded px-2 py-1 w-20 text-right"></td>
+                  </tr>
+                  <tr class="border-b">
+                    <td class="py-1.5">Impugnados</td>
+                    <td class="text-right"><input type="number" min="0" id="modalImpugnados" value="0" class="votoE border border-slate-300 rounded px-2 py-1 w-20 text-right"></td>
+                  </tr>
+                  <tr class="border-t-2 border-slate-400">
+                    <td class="py-1.5 font-bold">TOTAL EMITIDOS</td>
+                    <td class="text-right font-bold"><span id="modalTotal">0</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="flex gap-3 mt-5">
+              <button onclick="marcarOk()" class="bg-green-600 hover:bg-green-500 text-white px-5 py-2 rounded font-medium flex-1">Marcar correcta</button>
+              <button onclick="rechazarActa()" class="bg-red-600 hover:bg-red-500 text-white px-5 py-2 rounded font-medium flex-1">Rechazar</button>
+            </div>
+            <p id="msgModal" class="text-sm mt-3"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="fotoZoomOverlay" onclick="cerrarZoom()">
+      <img id="fotoZoomImg" src="" alt="acta ampliada">
+    </div>
+
+  </main>
+
+  <style>
+    #fotoZoomOverlay{display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.92);justify-content:center;align-items:center;cursor:zoom-out}
+    #fotoZoomOverlay.active{display:flex}
+    #fotoZoomOverlay img{max-width:95vw;max-height:95vh;object-fit:contain;border-radius:6px;box-shadow:0 0 40px rgba(0,0,0,.5)}
+    #modalFoto{cursor:zoom-in}
+    #modalFoto:hover{opacity:.92}
+  </style>
+  <script src="config.js"></script>
+  <script>
+    const hash = new URLSearchParams(window.location.hash.slice(1));
+    if (hash.get('id_token')) {
+      sessionStorage.setItem('idToken', hash.get('id_token'));
+      window.location = window.location.pathname;
+    }
+    if (!token()) {
+      window.location = loginUrl();
+    }
+
+    const acTA = { actaActual: null, conteoTimer: null, conteoDatos: null, conteoGrupo: 'regional' };
+
+    function mostrarPestana(id) {
+      document.querySelectorAll('.tabPanel').forEach((p) => p.classList.add('hidden'));
+      document.getElementById(id).classList.remove('hidden');
+      document.querySelectorAll('.tabBtn').forEach((b) => {
+        const on = b.dataset.tab === id;
+        b.className = 'tabBtn px-3 py-1.5 rounded ' + (on ? 'bg-blue-600' : 'bg-blue-700/50 hover:bg-blue-600');
+      });
+      if (id === 'tabConteo') {
+        cargarConteo();
+        if (!acTA.conteoTimer) acTA.conteoTimer = setInterval(cargarConteo, 15000);
+      } else if (acTA.conteoTimer) {
+        clearInterval(acTA.conteoTimer);
+        acTA.conteoTimer = null;
+      }
+    }
+    document.querySelectorAll('.tabBtn').forEach((b) => {
+      b.addEventListener('click', () => mostrarPestana(b.dataset.tab));
+    });
+
+    document.querySelectorAll('.conteoGrupo').forEach((b) => {
+      b.addEventListener('click', () => {
+        acTA.conteoGrupo = b.dataset.grupo;
+        document.querySelectorAll('.conteoGrupo').forEach((x) => {
+          const on = x.dataset.grupo === acTA.conteoGrupo;
+          x.className = 'conteoGrupo px-3 py-1.5 rounded text-sm ' + (on ? 'bg-blue-600 text-white' : 'bg-slate-200 hover:bg-slate-300');
+        });
+        pintarConteo();
+      });
+    });
+
+    async function cargarConteo() {
+      try {
+        acTA.conteoDatos = await api('/actas/revisar?vista=conteo');
+        document.getElementById('conteoReloj').textContent = 'Actualizado ' + new Date().toLocaleTimeString('es-PE');
+        pintarConteo();
+      } catch (err) {
+        document.getElementById('msgConteo').textContent = err.message;
+      }
+    }
+
+    function pintarConteo() {
+      const datos = acTA.conteoDatos;
+      if (!datos) return;
+      const est = datos.estados || {};
+      const zona = 'ATE';
+      let carreras = datos.carreras || [];
+      if (zona === 'AMAZONAS') {
+        carreras = carreras.filter((c) => (c.grupo || '') === acTA.conteoGrupo);
+      }
+      document.getElementById('conteoResumen').textContent =
+        `Mesas únicas en el tally: ${datos.mesasUnicas || 0} · OK ${est.OK || 0} · revisadas ${est.OK_REVISADO || 0} · discrepancia (no suman) ${est.DISCREPANCIA || 0}`;
+      const cont = document.getElementById('listaConteo');
+      cont.innerHTML = '';
+      if (!carreras.length) {
+        document.getElementById('msgConteo').textContent = zona === 'AMAZONAS' && acTA.conteoGrupo === 'provincial'
+          ? 'Aún no hay actas de alcalde provincial OK para sumar.'
+          : (zona === 'AMAZONAS'
+            ? 'Aún no hay actas regionales OK para sumar.'
+            : 'Aún no hay actas OK para sumar.');
+        return;
+      }
+      document.getElementById('msgConteo').textContent = '';
+      for (const car of carreras) {
+        const totalOrg = (car.organizaciones || []).reduce((s, o) => s + (o.votos || 0), 0);
+        const caja = document.createElement('div');
+        caja.className = 'border border-slate-200 rounded-lg p-4';
+        const filas = (car.organizaciones || []).map((o, i) => {
+          const pct = totalOrg ? Math.round((o.votos / totalOrg) * 1000) / 10 : 0;
+          const lider = i === 0 ? ' font-bold text-blue-800' : '';
+          return `<tr class="border-b last:border-0${lider}"><td class="py-1.5">${i + 1}. ${o.nombre}</td><td class="text-right tabular-nums">${o.votos}</td><td class="text-right text-slate-500 w-16">${pct}%</td></tr>`;
+        }).join('');
+        caja.innerHTML = `
+          <div class="flex justify-between items-baseline mb-2">
+            <h3 class="font-bold text-slate-800">${car.carrera}</h3>
+            <p class="text-xs text-slate-500">${car.mesas} mesa(s)${car.ganador ? ' · va ganando <b>' + car.ganador + '</b>' : ''}</p>
+          </div>
+          <table class="w-full text-sm"><thead><tr class="text-left text-slate-500 border-b"><th class="py-1">Organización</th><th class="text-right">Votos</th><th class="text-right">%</th></tr></thead>
+          <tbody>${filas}</tbody></table>
+          <p class="text-xs text-slate-400 mt-2">Blancos ${car.blanco} · nulos ${car.nulos}</p>`;
+        cont.appendChild(caja);
+      }
+    }
+
+    function cerrarSesion() {
+      sessionStorage.removeItem('idToken');
+      window.location = logoutUrl();
+    }
+
+    function avisar(id, texto, ok = false) {
+      const el = document.getElementById(id);
+      el.textContent = texto;
+      el.className = 'text-sm mt-3 ' + (ok ? 'text-green-700' : 'text-red-600');
+    }
+
+    document.getElementById('formAlta').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const dni = document.getElementById('inputDni').value.trim();
+      const celular = document.getElementById('inputCelular').value.trim();
+      if (!/^\d{8}$/.test(dni) || !/^\d{9}$/.test(celular)) {
+        avisar('msgAlta', 'DNI debe tener 8 dígitos y celular 9.');
+        return;
+      }
+      try {
+        await api('/personeros', { method: 'POST', body: JSON.stringify({ dni, celular }) });
+        avisar('msgAlta', 'Personero dado de alta. Ya puede iniciar sesión en la app.', true);
+        document.getElementById('formAlta').reset();
+        cargarPersoneros();
+      } catch (err) { avisar('msgAlta', err.message); }
+    });
+
+    document.getElementById('formBuscar').addEventListener('submit', (e) => {
+      e.preventDefault();
+      cargarPersoneros();
+    });
+
+    async function cargarPersoneros() {
+      const dni = document.getElementById('inputBuscar').value.trim();
+      const query = dni && /^\d{8}$/.test(dni) ? `?dni=${dni}` : '';
+      try {
+        const datos = await api('/personeros' + query);
+        const cuerpo = document.getElementById('tablaPersoneros');
+        cuerpo.innerHTML = '';
+        if (!datos.personeros.length) {
+          document.getElementById('msgPersoneros').textContent = 'Sin resultados.';
+          return;
+        }
+        document.getElementById('msgPersoneros').textContent = '';
+        for (const per of datos.personeros) {
+          const fila = document.createElement('tr');
+          fila.className = 'border-b last:border-0';
+          fila.innerHTML = `
+            <td class="py-2 font-medium">${per.dni}</td>
+            <td>${per.celular}</td>
+            <td><span class="px-2 py-0.5 rounded text-xs ${per.estado === 'ACTIVO' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-700'}">${per.estado}</span></td>
+            <td class="text-xs text-slate-500">${per.deviceId ? 'Vinculado' : 'Sin vincular'}${per.bloqueadoHasta ? ' · <b class="text-red-600">bloqueado</b>' : ''}</td>
+            <td class="flex gap-2">
+              <button data-accion="${per.estado === 'ACTIVO' ? 'desactivar' : 'activar'}" data-dni="${per.dni}" class="accion bg-slate-200 hover:bg-slate-300 px-2 py-1 rounded text-xs">${per.estado === 'ACTIVO' ? 'Desactivar' : 'Activar'}</button>
+              <button data-accion="revincular" data-dni="${per.dni}" class="accion bg-amber-100 hover:bg-amber-200 px-2 py-1 rounded text-xs" ${per.deviceId ? '' : 'disabled'}>Re-vincular</button>
+            </td>`;
+          cuerpo.appendChild(fila);
+        }
+        cuerpo.querySelectorAll('.accion').forEach((btn) => {
+          btn.addEventListener('click', () => accionPersonero(btn.dataset.dni, btn.dataset.accion));
+        });
+      } catch (err) { document.getElementById('msgPersoneros').textContent = err.message; }
+    }
+
+    async function accionPersonero(dni, accion) {
+      try {
+        await api(`/personeros/${dni}`, { method: 'PATCH', body: JSON.stringify({ accion }) });
+        cargarPersoneros();
+      } catch (err) { alert(err.message); }
+    }
+
+    async function cargarCuarentena() {
+      try {
+        const datos = await api('/cuarentena');
+        const cont = document.getElementById('listaCuarentena');
+        cont.innerHTML = '';
+        if (!datos.fotos.length) {
+          document.getElementById('msgCuarentena').textContent = 'No hay fotos en cuarentena.';
+          return;
+        }
+        document.getElementById('msgCuarentena').textContent = '';
+        for (const foto of datos.fotos) {
+          const tarjeta = document.createElement('div');
+          tarjeta.className = 'border rounded-lg p-2 bg-slate-50';
+          const kb = ((foto.tamano || 0) / 1024).toFixed(0);
+          const motivo = String(foto.motivo || '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+          const dni = String(foto.dni || 'desconocido').replace(/[&<>]/g, '');
+          const thumb = foto.miniatura
+            ? `<img src="${foto.miniatura}" class="w-full h-32 object-cover rounded" alt="foto retenida">`
+            : `<div class="w-full h-32 bg-slate-200 rounded flex items-center justify-center text-xs text-slate-500">Sin miniatura</div>`;
+          tarjeta.innerHTML = `
+            ${thumb}
+            <p class="text-xs text-slate-600 mt-1.5">DNI: <b>${dni}</b></p>
+            <p class="text-xs text-slate-400">${kb} KB</p>
+            ${motivo ? `<p class="text-xs text-amber-700 mt-1">${motivo}</p>` : ''}
+            <div class="flex gap-1.5 mt-2">
+              <button data-key="${encodeURIComponent(foto.key)}" data-res="liberar" class="resC bg-green-600 hover:bg-green-500 text-white px-2 py-1 rounded text-xs flex-1">Liberar</button>
+              <button data-key="${encodeURIComponent(foto.key)}" data-res="rechazar" class="resC bg-red-600 hover:bg-red-500 text-white px-2 py-1 rounded text-xs flex-1">Rechazar</button>
+            </div>`;
+          cont.appendChild(tarjeta);
+        }
+        cont.querySelectorAll('.resC').forEach((btn) => {
+          btn.addEventListener('click', () => resolverCuarentena(btn.dataset.key, btn.dataset.res));
+        });
+      } catch (err) { document.getElementById('msgCuarentena').textContent = err.message; }
+    }
+
+    async function resolverCuarentena(keyCodificada, resolucion) {
+      try {
+        await api(`/cuarentena/${keyCodificada}/${resolucion}`, { method: 'POST' });
+        cargarCuarentena();
+      } catch (err) { alert(err.message); }
+    }
+
+    cargarPersoneros();
+    cargarCuarentena();
+    cargarActas();
+
+    const SORTEO_46 = [
+      'ALIANZA PARA EL PROGRESO',
+      'PARTIDO POLITICO NACIONAL PERU LIBRE',
+      'PARTIDO POR EL ENTENDIMIENTO RECUPERACION Y UNIFICACION DEL PERU',
+      'SALVEMOS AL PERU',
+      'JUNTOS POR EL PERU',
+      'PARTIDO POLITICO INTEGRIDAD DEMOCRATICA',
+      'PARTIDO FRENTE DE LA ESPERANZA 2021',
+      'ACCION POPULAR',
+      'COOPERACION VERDAD Y HONRADEZ',
+      'PARTIDO CIVICO OBRAS',
+      'PARTIDO POLITICO TODO CON EL PUEBLO',
+      'COALICION TRANSFORMADORA TIERRA VERDE',
+      'RENOVACION POPULAR PERU',
+      'FE EN EL PERU',
+      'PARTIDO DEMOCRATA VERDE',
+      'ALIANZA REGIONAL POR EL PERU',
+      'PARTIDO POLITICO PRIN',
+      'UN CAMINO DIFERENTE',
+      'PARTIDO POPULAR CRISTIANO PPC',
+      'VISION PERU',
+      'FRENTE POPULAR AGRICOLA FIA DEL PERU',
+      'FUERZA POPULAR',
+      'AVANZA PAIS - PARTIDO DE INTEGRACION SOCIAL',
+      'LIBERTAD POPULAR',
+      'PARTIDO DE LOS TRABAJADORES Y EMPRENDEDORES PTE PERU',
+      'PARTIDO POLITICO PERU PRIMERO',
+      'PARTIDO DEMOCRATA UNIDO PERU',
+      'PARTIDO PATRIOTICO DEL PERU',
+      'FUERZA CIUDADANA',
+      'PARTIDO UNIDAD Y PAZ',
+      'BATALLA PERU',
+      'PARTIDO PAIS PARA TODOS',
+      'AHORA NACION - AN',
+      'PRIMERO LA GENTE - COMUNIDAD ECOLOGIA LIBERTAD Y PROGRESO',
+      'PROGRESEMOS',
+      'PARTIDO DEL BUEN GOBIERNO',
+      'PARTIDO POLITICO PUEBLO CONSCIENTE',
+      'PARTIDO POLITICO PERU ACCION',
+      'PARTIDO DEMOCRATICO SOMOS PERU',
+      'PARTIDO APRAISTA PERUANO',
+      'PODEMOS PERU',
+      'ALIANZA ELECTORAL VENCEREMOS',
+      'PARTIDO MORADO',
+      'PERU MODERNO',
+      'PARTIDO SICREO',
+      'PARTIDO POLITICO ADP'
+    ];
+
+    function _norm(s) {
+      return (s || '').toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+    }
+
+    function _matchIdx(nombre, catalogo) {
+      const n = _norm(nombre);
+      for (let i = 0; i < catalogo.length; i++) {
+        const c = _norm(catalogo[i]);
+        if (n === c || c.includes(n) || n.includes(c)) return i;
+      }
+      return -1;
+    }
+
+    function ordenarMovimientos(movimientos, tipoActas, distrito, provincia) {
+      const entries = Object.entries(movimientos || {});
+      if (!entries.length) return {};
+      entries.sort((a, b) => {
+        const ia = _matchIdx(a[0], SORTEO_46);
+        const ib = _matchIdx(b[0], SORTEO_46);
+        if (ia >= 0 && ib >= 0) return ia - ib;
+        if (ia >= 0) return -1;
+        if (ib >= 0) return 1;
+        return a[0].localeCompare(b[0]);
+      });
+      return Object.fromEntries(entries);
+    }
+
+    function abrirZoom() {
+      const img = document.getElementById('modalFoto');
+      if (!img.src) return;
+      document.getElementById('fotoZoomImg').src = img.src;
+      document.getElementById('fotoZoomOverlay').classList.add('active');
+    }
+    function cerrarZoom() {
+      document.getElementById('fotoZoomOverlay').classList.remove('active');
+    }
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') cerrarZoom();
+    });
+    document.getElementById('modalFoto').addEventListener('click', abrirZoom);
+
+    async function cargarActas() {
+      try {
+        const datos = await api('/actas/revisar');
+        const cont = document.getElementById('listaActas');
+        cont.innerHTML = '';
+        if (!datos.actas.length) {
+          document.getElementById('msgActas').textContent = 'No hay actas por revisar.';
+          return;
+        }
+        document.getElementById('msgActas').textContent = `Pendientes: ${datos.actas.length}`;
+        for (const acta of datos.actas) {
+          const fila = document.createElement('div');
+          fila.className = 'border rounded-lg p-3 bg-slate-50 flex justify-between items-center';
+          const bloques = acta.bloques || [];
+          const resumen = bloques[0]?.votos_por_movimiento
+            ? Object.keys(bloques[0].votos_por_movimiento).length + ' movimientos'
+            : 'sin bloques';
+          fila.innerHTML = `
+            <div>
+              <p class="text-sm"><b>Mesa ${acta.mesa}</b> · ${acta.tipoActas} · ${acta.distrito || acta.provincia || ''}</p>
+              <p class="text-xs text-slate-500">${acta.fechaHoraCaptura} · DNI ${acta.dni} · ${resumen}</p>
+              <p class="text-xs text-red-600 mt-0.5">${(acta.errores || []).slice(0, 2).join(' · ')}</p>
+            </div>
+            <button onclick="abrirActa(${JSON.stringify(acta).replace(/"/g, '&quot;')})" class="bg-blue-700 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm whitespace-nowrap">Revisar</button>`;
+          cont.appendChild(fila);
+        }
+      } catch (err) { document.getElementById('msgActas').textContent = err.message; }
+    }
+
+    function abrirActa(acta) {
+      acTA.actaActual = acta;
+      document.getElementById('modalTitulo').textContent = `Mesa ${acta.mesa} · ${acta.tipoActas} · ${acta.distrito || acta.provincia || ''}`;
+      document.getElementById('modalFoto').src = acta.foto;
+      document.getElementById('modalErrores').textContent = (acta.errores || []).join(' · ') || 'Sin errores registrados.';
+      document.getElementById('modalOrigen').textContent = acta.fotoEsOriginal
+        ? 'Mostrando foto original sin comprimir.'
+        : 'Mostrando foto comprimida (2500px).';
+      const cuerpo = document.getElementById('modalVotos');
+      cuerpo.innerHTML = '';
+      const bloques = (acta.bloques || []).filter(b => b?.votos_por_movimiento);
+      if (!bloques.length) {
+        document.getElementById('modalErrores').textContent += ' · El modelo no extrajo movimientos.';
+      }
+      const b = bloques[0] || {};
+      for (const b of bloques) {
+        const ordenado = ordenarMovimientos(b.votos_por_movimiento, acta.tipoActas, acta.distrito, acta.provincia);
+        for (const [nombre, voto] of Object.entries(ordenado)) {
+          const fila = document.createElement('tr');
+          fila.className = 'border-b';
+          fila.innerHTML = `
+            <td class="py-1.5">${nombre}</td>
+            <td class="text-right"><input type="number" min="0" value="${voto ?? 0}" class="votoN border border-slate-300 rounded px-2 py-1 w-20 text-right" data-nombre="${encodeURIComponent(nombre)}"></td>`;
+          cuerpo.appendChild(fila);
+        }
+      }
+      const blanco = b.votos_blanco ?? 0;
+      const nulos = b.votos_nulos ?? 0;
+      const impugnados = b.votos_impugnados ?? 0;
+      const total = b.total_votos_emitidos ?? 0;
+      document.getElementById('modalBlanco').value = blanco;
+      document.getElementById('modalNulos').value = nulos;
+      document.getElementById('modalImpugnados').value = impugnados;
+      _recalcularModal();
+      document.getElementById('msgModal').textContent = '';
+      document.getElementById('modalActa').classList.remove('hidden');
+    }
+
+    function _recalcularModal() {
+      let suma = 0;
+      document.querySelectorAll('.votoN').forEach((i) => { suma += parseInt(i.value || '0', 10); });
+      document.getElementById('modalSuma').textContent = suma;
+      const blanco = parseInt(document.getElementById('modalBlanco').value || '0', 10);
+      const nulos = parseInt(document.getElementById('modalNulos').value || '0', 10);
+      const impugnados = parseInt(document.getElementById('modalImpugnados').value || '0', 10);
+      const total = suma + blanco + nulos + impugnados;
+      document.getElementById('modalTotal').textContent = total;
+      const acta = acTA.actaActual;
+      const actaTotal = acta?.bloques?.[0]?.total_votos_emitidos ?? 0;
+      const disp = document.getElementById('modalDiscrepancia');
+      if (actaTotal && total !== actaTotal) {
+        disp.textContent = `Total calculado (${total}) ≠ total del acta (${actaTotal})`;
+        disp.classList.remove('hidden');
+      } else {
+        disp.classList.add('hidden');
+      }
+    }
+
+    function cerrarModal() {
+      document.getElementById('modalActa').classList.add('hidden');
+    }
+
+    function votosEditados() {
+      const votos = {};
+      document.querySelectorAll('.votoN').forEach((i) => {
+        votos[decodeURIComponent(i.dataset.nombre)] = parseInt(i.value || '0', 10);
+      });
+      return votos;
+    }
+
+    function extrasEditados() {
+      return {
+        votos_blanco: parseInt(document.getElementById('modalBlanco').value || '0', 10),
+        votos_nulos: parseInt(document.getElementById('modalNulos').value || '0', 10),
+        votos_impugnados: parseInt(document.getElementById('modalImpugnados').value || '0', 10),
+        total_votos_emitidos: parseInt(document.getElementById('modalTotal').textContent || '0', 10),
+      };
+    }
+
+    async function marcarOk() {
+      const acta = acTA.actaActual;
+      if (!acta) return;
+      const extras = extrasEditados();
+      const bloques = (acta.bloques || []).map((b) => ({
+        ...b,
+        votos_por_movimiento: votosEditados(),
+        votos_blanco: extras.votos_blanco,
+        votos_nulos: extras.votos_nulos,
+        votos_impugnados: extras.votos_impugnados,
+        total_votos_emitidos: extras.total_votos_emitidos,
+      }));
+      try {
+        await api(`/actas/${encodeURIComponent(acta.registro)}/marcar-ok`, { method: 'POST', body: JSON.stringify({ bloques }) });
+        document.getElementById('msgModal').textContent = 'Guardado.';
+        cerrarModal();
+        cargarActas();
+      } catch (err) { document.getElementById('msgModal').textContent = err.message; }
+    }
+
+    async function rechazarActa() {
+      const acta = acTA.actaActual;
+      if (!acta || !confirm(`¿Rechazar el acta de la mesa ${acta.mesa}?`)) return;
+      try {
+        await api(`/actas/${encodeURIComponent(acta.registro)}/rechazar`, { method: 'POST' });
+        document.getElementById('msgModal').textContent = 'Acta rechazada.';
+        cerrarModal();
+        cargarActas();
+      } catch (err) { document.getElementById('msgModal').textContent = err.message; }
+    }
+
+    document.getElementById('modalVotos').addEventListener('input', _recalcularModal);
+    document.getElementById('modalBlanco').addEventListener('input', _recalcularModal);
+    document.getElementById('modalNulos').addEventListener('input', _recalcularModal);
+    document.getElementById('modalImpugnados').addEventListener('input', _recalcularModal);
+  </script>
+</body>
+</html>
